@@ -23,7 +23,7 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["SECRET_KEY"]
+SECRET_KEY = "django-insecure-45byf3teyl(hrduo45o1@ufk7m88=2imo!9u80!_-gjwq%^577"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
 
-
+    "myapp",
+    "ML",
     "ML_Apps",
 ]
 
