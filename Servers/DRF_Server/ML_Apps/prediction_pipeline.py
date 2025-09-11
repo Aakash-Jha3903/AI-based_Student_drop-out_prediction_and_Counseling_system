@@ -1,4 +1,5 @@
 # ML_Apps/prediction_pipeline.py
+from .ml_model_store import try_load, save_model, FEATURE_VERSION  
 from typing import Dict, Any, List, Tuple, Optional
 from bson import ObjectId
 from collections import defaultdict
@@ -225,15 +226,24 @@ def _calculate_risk_for_row(row: pd.Series) -> Tuple[float, str, str, str]:
     return score, level, color, reason_text
 
 
-# Training + prediction, with fallbacks
-def run_prediction_pipeline(df: pd.DataFrame) -> pd.DataFrame:
+# ... (imports at top)
+from .ml_model_store import try_load, save_model, FEATURE_VERSION  # NEW
+
+# (no change) resolve_school_oid, _avg_test_score_from_marks, build_school_dataframe, _calculate_risk_for_row
+
+def run_prediction_pipeline(
+    df: pd.DataFrame,
+    *,
+    model_scope: Optional[str] = None,   # e.g., "school:<oid>", "state:<oid>"
+    force_retrain: bool = False
+) -> pd.DataFrame:
     """
     Steps:
       1) Rule-based scoring -> Risk_Score/Level/Color/Reason
       2) Quantile pseudo-labels (0/1/2)
-      3) Scale -> (optional) SMOTE (only if class counts support it)
-      4) Classifier -> predict proba
-      5) If tiny/degenerate class case, fall back to rule-based probability
+      3) Try cached model (if present & not force_retrain)
+      4) Else: Scale -> (optional) SMOTE -> train -> save -> predict
+      5) Fallback to rule-based probability for tiny/degenerate cases
     """
     if df.empty:
         return df
@@ -243,8 +253,7 @@ def run_prediction_pipeline(df: pd.DataFrame) -> pd.DataFrame:
     rb.columns = ["Risk_Score", "Risk_Level", "Risk_Color", "Dropout_Reason"]
     df = pd.concat([df, rb], axis=1)
 
-    # 2) Quantile pseudo-labels -> At_Risk
-    # With tiny N, q1 and q2 can coincide; that's OK, handled below.
+    # 2) Pseudo-labels via quantiles
     q1, q2 = df["Risk_Score"].quantile([0.33, 0.66])
     def _risk_class(s):
         if s <= q1: return 0
@@ -252,7 +261,7 @@ def run_prediction_pipeline(df: pd.DataFrame) -> pd.DataFrame:
         return 2
     df["At_Risk"] = df["Risk_Score"].apply(_risk_class)
 
-    # If we don't have at least 2 classes, fall back to rule-based only.
+    # If we don't have at least 2 classes, use rule-based only
     y = df["At_Risk"].to_numpy()
     unique_classes, counts = np.unique(y, return_counts=True)
     if len(unique_classes) < 2:
@@ -260,26 +269,41 @@ def run_prediction_pipeline(df: pd.DataFrame) -> pd.DataFrame:
         df["Predicted_Risk_Level"] = df["Risk_Level"]
         return df
 
-    # 3) Features & scaling
+    # 3) Try cached model (if any)
     features = ["Attendance_Rate", "Test_Score", "Fees"]
     X = df[features].to_numpy(dtype=float)
 
+    if model_scope and not force_retrain:
+        cached = try_load(model_scope)
+        if cached and "model" in cached and "scaler" in cached:
+            try:
+                scaler = cached["scaler"]
+                model = cached["model"]
+                X_scaled = scaler.transform(X)
+                proba = model.predict_proba(X_scaled)
+                df["Dropout_Probability"] = proba.max(axis=1)
+                idx_to_label = {0: "Low", 1: "Medium", 2: "High"}
+                df["Predicted_Risk_Level"] = [idx_to_label[int(np.argmax(p))] for p in proba]
+                return df
+            except Exception:
+                # fall through to (re)train
+                pass
+
+    # 4) Train a new model → save cache → predict
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # Optional SMOTE — only if every minority class has >= (k_neighbors + 1) samples
     X_bal, y_bal = X_scaled, y
     if _HAS_IMB:
         min_class_count = counts.min()
-        # Choose the largest valid k_neighbors (>=1) but never more than 5
         k = min(5, int(min_class_count) - 1)
         if k >= 1:
+            from imblearn.over_sampling import SMOTE  # delayed import ok
             sm = SMOTE(random_state=RANDOM_STATE, k_neighbors=k)
             X_bal, y_bal = sm.fit_resample(X_scaled, y)
-        # else: too few samples in the smallest class — skip SMOTE
 
-    # 4) Train classifier (LGBM for huge sets else RF)
     if _HAS_LGB and len(df) > 50000:
+        import lightgbm as lgb  # delayed import ok
         model = lgb.LGBMClassifier(
             n_estimators=200, max_depth=15, learning_rate=0.1, random_state=RANDOM_STATE
         )
@@ -288,18 +312,26 @@ def run_prediction_pipeline(df: pd.DataFrame) -> pd.DataFrame:
             n_estimators=200, random_state=RANDOM_STATE, class_weight="balanced", n_jobs=-1
         )
 
-    # Guard: very tiny sets can still break some learners — fail back to rule-based
     try:
         model.fit(X_bal, y_bal)
-        proba = model.predict_proba(X_scaled)  # shape [n,3]
+        # Save if scope provided
+        if model_scope:
+            save_model(model_scope, model, scaler, extra_meta={
+                "classes_": getattr(model, "classes_", None),
+                "n_samples": int(len(df)),
+                "feature_names": features,
+            })
+
+        proba = model.predict_proba(X_scaled)
         df["Dropout_Probability"] = proba.max(axis=1)
         idx_to_label = {0: "Low", 1: "Medium", 2: "High"}
         df["Predicted_Risk_Level"] = [idx_to_label[int(np.argmax(p))] for p in proba]
+        return df
     except Exception:
+        # 5) Final fallback
         df["Dropout_Probability"] = (df["Risk_Score"] / 100.0).clip(0.0, 1.0)
         df["Predicted_Risk_Level"] = df["Risk_Level"]
-
-    return df
+        return df
 
 
 # API payload (safe fields)
