@@ -1,12 +1,12 @@
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from .summary import generate_gemini_insights 
 
 from .pymongo_client import get_db
 from .prediction_pipeline import (
     build_school_dataframe, run_prediction_pipeline, to_api_payload, resolve_school_oid
 )
-from .summary import generate_gemini_insights 
 
 class PredictSchoolView(APIView):
     """
@@ -15,9 +15,10 @@ class PredictSchoolView(APIView):
       { "school_public_id": <number> } OR { "school_name": "<string>" }
       + optional:
           { "fees_months_denom": 12,
-            "with_gemini": true,              # default False
-            "gemini_max_students": 10,        # optional
-            "gemini_max_chars": 1800 }        # optional
+            "with_gemini": true,              // default False
+            "gemini_max_students": 10,        // optional
+            "gemini_max_chars": 1800          // optional
+           }
     NOTE: Raw ObjectIds from client are rejected by design.
     """
 
@@ -53,7 +54,10 @@ class PredictSchoolView(APIView):
             if df.empty:
                 return Response({"count": 0, "results": []}, status=status.HTTP_200_OK)
 
-            df_out = run_prediction_pipeline(df)
+            scope_key = f"school:{str(school_oid)}"
+            force = bool(request.data.get("force_retrain", False))
+            df_out = run_prediction_pipeline(df, model_scope=scope_key, force_retrain=force)            
+            
             payload = to_api_payload(df_out)
             
             # Gemini summary
