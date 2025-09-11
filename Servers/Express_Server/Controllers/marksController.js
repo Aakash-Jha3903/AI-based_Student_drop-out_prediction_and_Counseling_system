@@ -1,8 +1,10 @@
 const XLSX = require("xlsx");
 const Marks = require("../models/MarksModel");
-const Student = require("../Models/StudentModel");
+const Student = require("../models/StudentModel");
 const Subject = require("../models/SubjectModel");
 const mongoose = require("mongoose");
+const { notifyByStudent } = require("../Controllers/notificationController");
+const { notifySchool } = require("../Controllers/schoolNotificationController");
 
 // Upload Marks Excel
 exports.uploadMarksExcel = async (req, res) => {
@@ -44,6 +46,9 @@ exports.uploadMarksExcel = async (req, res) => {
             marksDoc = new Marks({ SchoolId: schoolId, Students: [] });
         }
 
+        const affectedStudentIds = new Set();
+        const affectedStudentNames = new Map();
+
         for (const row of sheetData) {
             const studentName = row["Name"];
             const newMarks = Number(row["Marks"]);
@@ -63,6 +68,8 @@ exports.uploadMarksExcel = async (req, res) => {
             }
 
             const studentId = student._id;
+            affectedStudentIds.add(studentId.toString());
+            affectedStudentNames.set(studentId.toString(), student.Name);
 
             // Check if student is already in Marks collection
             const existingIndex = marksDoc.Students.findIndex(
@@ -92,6 +99,13 @@ exports.uploadMarksExcel = async (req, res) => {
         }
 
         await marksDoc.save();
+
+        // Notify affected students and school (with names)
+        for (const sid of affectedStudentIds) {
+            const name = affectedStudentNames.get(sid) || "Student";
+            await notifyByStudent(sid, "Your marks are uploaded");
+            await notifySchool(schoolId, `${name} marks uploaded${subjectName ? ` in ${subjectName}` : ""}`);
+        }
 
         return res.status(200).json({
             message: "Marks uploaded and processed successfully",

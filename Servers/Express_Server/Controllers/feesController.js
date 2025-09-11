@@ -1,12 +1,15 @@
 const XLSX = require("xlsx");
 const mongoose = require("mongoose");
 const Fees = require("../models/FeesModel");
-const Student = require("../Models/StudentModel");
+const Student = require("../models/StudentModel");
+const { notifyByStudent } = require("../Controllers/notificationController");
+const { notifySchool } = require("../Controllers/schoolNotificationController");
 
 // Upload and Process Excel File
 exports.uploadFeesExcel = async (req, res) => {
     try {
         const { schoolId } = req.params;
+        const { standard } = req.body || {};
 
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -26,6 +29,8 @@ exports.uploadFeesExcel = async (req, res) => {
         if (!feesDoc) {
             feesDoc = new Fees({ school_Id: schoolId, Students: [] });
         }
+
+        const affectedStudentIds = new Set();
 
         for (const row of sheetData) {
             const studentName = row["Name"];
@@ -49,6 +54,8 @@ exports.uploadFeesExcel = async (req, res) => {
                 console.log(`Skipping ${studentName} — no matching student found in this school`);
                 continue; //Skip row safely
             }
+
+            affectedStudentIds.add(student_id.toString());
 
             // Check if student already in Fees
             const existingIndex = feesDoc.Students.findIndex(
@@ -80,6 +87,15 @@ exports.uploadFeesExcel = async (req, res) => {
         console.log("Final fee Entry in DB: ", feesDoc);
 
         await feesDoc.save();
+
+        // Notify affected students
+        for (const sid of affectedStudentIds) {
+            await notifyByStudent(sid, "Your Fees data is updated");
+        }
+        // Notify school
+        if (affectedStudentIds.size > 0) {
+            await notifySchool(schoolId, `Fees are updated${standard ? ` of Standard ${standard}` : ""}`);
+        }
 
         return res.status(200).json({
             message: "Fees data processed successfully",

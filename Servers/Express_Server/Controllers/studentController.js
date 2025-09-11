@@ -1,4 +1,4 @@
-const StudentModel = require("../Models/StudentModel");
+const StudentModel = require("../models/StudentModel");
 const UserModel = require("../models/UserModel");
 const xlsx = require("xlsx");
 const mongoose = require("mongoose");
@@ -8,6 +8,8 @@ const TalukaModel = require("../models/TalukaModel");
 const CityModel = require("../models/CityModel");
 const SchoolModel = require("../models/SchoolModel");
 const sendMail = require("./SendMail");
+const { notifyByStudent } = require("../Controllers/notificationController");
+const { notifySchool } = require("../Controllers/schoolNotificationController");
 
 async function getStudents(req, res) {
   try {
@@ -65,6 +67,9 @@ async function addStudents(req, res) {
 
     // Send email with login credentials
     sendMail.SendEmail(data.Email, password);
+
+    // Optional: Student welcome notification
+    await notifyByStudent(data._id, "Welcome to EduTracker");
 
     res.json({
       data: data,
@@ -179,7 +184,8 @@ async function addStudentsFromExcel(req, res) {
       const result = await StudentModel.create({
         ...element,
         RollNumber: element.RollNumber || element.rollNumber,
-        parentEmail: element.ParentEmail || element.parentEmail, // Try both possible field names
+        parentEmail: element.ParentEmail || element.parentEmail, 
+        parentPhone: element.ParentPhone || element.parentPhone, 
         Email: element.Email, // Ensure student email is mapped
         ParentMaritalStatus: parseInt(element.ParentMaritalStatus, 10),
         Disablity: parseInt(element.Disability, 10) || 0,
@@ -217,6 +223,9 @@ async function addStudentsFromExcel(req, res) {
       if (result.Email) {
         sendMail.SendEmail(result.Email, password);
       }
+
+      // Optional: Student welcome notification
+      await notifyByStudent(result._id, "Welcome to EduTracker");
     }
 
     // Return a success response
@@ -282,6 +291,15 @@ async function uploadAttendanceExcel(req, res) {
       student.AttendancePercentage = attendance;
       await student.save();
       updatedStudents.push(student);
+    }
+
+    // Notify updated students
+    for (const s of updatedStudents) {
+      await notifyByStudent(s._id, "Your Attendance is uploaded");
+    }
+    // Notify school
+    if (updatedStudents.length > 0) {
+      await notifySchool(schoolId, `Attendance are updated of Standard ${standard}`);
     }
 
     return res.status(200).json({

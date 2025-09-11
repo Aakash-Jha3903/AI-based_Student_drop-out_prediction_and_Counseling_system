@@ -1,13 +1,11 @@
 const SchoolModel = require("../models/SchoolModel");
-const schoolModel = require("../models/SchoolModel");
-const studentmodel = require("../Models/StudentModel");
 const SchoolTypeModel = require("../models/SchoolType");
 const { default: mongoose } = require("mongoose");
-const StudentModel = require("../Models/StudentModel");
+const StudentModel = require("../models/StudentModel");
 
 async function getSchool(req, res) {
   try {
-    let data = await schoolModel
+    let data = await SchoolModel
       .find(req.query)
       .populate("Medium")
       .populate("State")
@@ -33,7 +31,7 @@ async function addSchool(req, res) {
       .exec();
     const newSchool_id = lastSchool ? lastSchool.SchoolID + 1 : 100000;
 
-    let data = new schoolModel(req.body);
+    let data = new SchoolModel(req.body);
     data.SchoolID = newSchool_id;
     await data.save();
     res.json({
@@ -87,7 +85,7 @@ async function schoolDashboardCount(req, res) {
 
     // The entire expression { $eq: [lastSchoolName, { $arrayElemAt: ["$School_name", -1] }] } compares the lastSchoolName variable with the last element of the School_name array within each document.
 
-    const students = await studentmodel.find({
+    const students = await StudentModel.find({
       $expr: {
         $eq: [
           lastSchoolId,
@@ -128,9 +126,9 @@ async function schoolDashboardCount(req, res) {
       rcode: 200,
     });
   } catch (error) {
-    console.log(err);
+    console.log(error);
     res.json({
-      data: err,
+      data: error,
       rcode: -9,
     });
   }
@@ -143,7 +141,7 @@ async function addExistingStudent(req, res) {
 
   try {
     if (studentId && schoolID) {
-      let student = await studentmodel.findOne({ _id: studentId });
+      let student = await StudentModel.findOne({ _id: studentId });
       student.Standard = standard;
       student.SchoolID.push(schoolID);
       await student.save();

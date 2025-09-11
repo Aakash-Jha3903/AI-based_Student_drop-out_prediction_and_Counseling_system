@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const CounsellingSchema = new mongoose.Schema(
     {
         School: {
-            type: String, // school email
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "schools", // school Object ID
             required: true,
         },
         Students: [
