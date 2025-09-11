@@ -13,6 +13,9 @@ const subjectRoutes = require("./routes/subjectRoutes");
 const feesRoutes = require("./routes/feesRoutes");
 const marksRoutes = require("./routes/marksRoutes");
 const counsellingRoutes = require("./routes/counsellingRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const mentorNotificationRoutes = require("./routes/mentorNotificationRoutes");
+const schoolNotificationRoutes = require("./routes/schoolNotificationRoutes");
 const app = express();
 
 //dbconnection
@@ -39,6 +42,9 @@ app.use("/", subjectRoutes);
 app.use("/", feesRoutes);
 app.use("/", marksRoutes);
 app.use("/", counsellingRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/mentor-notifications", mentorNotificationRoutes);
+app.use("/school-notifications", schoolNotificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello From Backend Server");

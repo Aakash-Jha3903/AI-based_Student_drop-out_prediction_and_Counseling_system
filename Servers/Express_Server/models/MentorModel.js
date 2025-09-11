@@ -13,6 +13,7 @@ const MentorSchema = new mongoose.Schema(
         Gender: String,
         AadharNumber: Number,
         ContactNumber: { type: Number },
+        counselling_done: {type: Number, default:0},
         SchoolID: [{ type: mongoose.Schema.Types.ObjectId, ref: "schools" }],
         State: { type: mongoose.Schema.Types.ObjectId, ref: "states" },
         District: { type: mongoose.Schema.Types.ObjectId, ref: "districts" },
