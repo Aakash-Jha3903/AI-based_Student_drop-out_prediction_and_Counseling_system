@@ -1,4 +1,4 @@
-const MentorModel = require("../Models/MentorModel");
+const MentorModel = require("../models/MentorModel");
 const UserModel = require("../models/UserModel");
 const xlsx = require("xlsx");
 const mongoose = require("mongoose");
@@ -8,6 +8,7 @@ const TalukaModel = require("../models/TalukaModel");
 const CityModel = require("../models/CityModel");
 const SchoolModel = require("../models/SchoolModel");
 const sendMail = require("./SendMail");
+const { notify } = require("../Controllers/notificationController");
 
 async function getMentors(req, res) {
     try {
@@ -64,6 +65,9 @@ async function addMentors(req, res) {
 
         // Send email with login credentials
         sendMail.SendEmail(data.Email, password);
+
+        // Send welcome notification
+        await notify(user._id, "Welcome to EduTracker", { title: "Account Created", data: { mentorId: data._id } });
 
         res.json({
             data: data,
@@ -159,6 +163,9 @@ async function addMentorsFromExcel(req, res) {
             if (result.Email) {
                 sendMail.SendEmail(result.Email, password);
             }
+
+            // Send welcome notification
+            await notify(user._id, "Welcome to EduTracker", { title: "Account Created", data: { mentorId: result._id } });
         }
 
         // Return a success response

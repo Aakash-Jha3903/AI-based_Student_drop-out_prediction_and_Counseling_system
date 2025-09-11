@@ -1,11 +1,6 @@
 const ReasonModel = require("./../models/ReasonModel");
 const mongoose = require("mongoose");
 async function addReason(req, res) {
-  // let pdf = [];
-  // req.files.forEach((ele) => {
-  //   pdf.push({ name: ele.originalname, file: ele.filename });
-  // });
-  // let links = req.body.links;
   let reason = new ReasonModel(req.body);
   await reason.save();
   res.json({ rcode: 200 });
@@ -18,18 +13,6 @@ async function getReason(req, res) {
 
 async function addResource(req, res) {
   try {
-    // let pdf = [];
-    // req.files["pdf"].map((ele) => {
-    //   pdf.push({ name: ele.originalname, file: ele.filename });
-    // });
-    // let video = [];
-    // req.files["video"].map((ele) => {
-    //   video.push({ name: ele.originalname, file: ele.filename });
-    // });
-    // let pptx = [];
-    // req.files["pptx"].map((ele) => {
-    //   pptx.push({ name: ele.originalname, file: ele.filename });
-    // });
     let pdf = req.files["pdf"]
       ? req.files["pdf"].map((ele) => ({
           name: ele.originalname,
@@ -90,7 +73,6 @@ async function customeSearch(req, res) {
     });
   } catch (err) {
     console.error(err);
-    // throw err;
   }
 }
 
