@@ -18,7 +18,7 @@ http://127.0.0.1:8000/RAG_api/rag/build-from-dir/
 
 # upload pdf file 📃📃
 http://127.0.0.1:8000/RAG_api/rag/build-from-upload/
-Go to the option of form data , then select
+Go to the option of "Body" -->> form data , then select
 key --> files
 value -->> select pdf path
 
