@@ -62,6 +62,7 @@ import RemediesDataTable from "./Components/Admin/RemediesDataTable";
 import StudentNotifications from "./Components/Student/Notifications/StudentNotifications";
 import RAGChat from "./Components/Student/RAG/RAGClient";
 import SchoolNotifications from "./Components/School/Notifications/SchoolNotifications";
+import DroppedStudents from "./Components/Mentor/DroppedStudents";
 
 const router = createBrowserRouter([
   {
@@ -382,6 +383,11 @@ const router = createBrowserRouter([
         element: <MentorNotifications />,
         errorElement: <ErrorPage />,
       },
+      {
+      path: "droppedstudents",  
+      element: <DroppedStudents />,
+      errorElement: <ErrorPage />,
+    },
     ],
   },
 ]);

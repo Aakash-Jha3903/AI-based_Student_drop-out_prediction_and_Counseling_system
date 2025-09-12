@@ -144,6 +144,34 @@ const Layout = () => {
               Notifications
             </Link>
           </div>
+
+{/* Dropped Students */}
+<div className={`hover:shadow-orange-900 hover:shadow-md hover:bg-orange-900/40 transition-all duration-300 ${selectedSidebar === "droppedstudents" ? "border-orange-900 bg-orange-900/80" : ""}`} onClick={() => setSelectedSidebar("droppedstudents")}>
+  <Link
+    to={"droppedstudents"}
+    className="flex items-center active-nav-link text-white py-4 pl-6 nav-item gap-2 focus:outline-none focus:shadow-md focus:shadow-orange-900 hover:text-orange-100 transition-colors duration-300"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 14v7m-6-3h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"
+      />
+    </svg>
+    Dropped Students
+  </Link>
+</div>
+
+
+
+          
         </nav>
       </aside>
 
@@ -249,6 +277,20 @@ const Layout = () => {
               <i className="fas fa-bell mr-3"></i>
               Notifications
             </Link>
+
+
+<Link
+  to={"droppedstudents"}
+  className="flex items-center active-nav-link text-white py-2 pl-4 nav-item"
+>
+  <i className="fas fa-user-slash mr-3"></i>
+  Dropped Students
+</Link>
+
+
+
+
+            
             <button
               onClick={LogoutHandler}
               className="w-full bg-white cta-btn font-semibold py-2 mt-5 rounded-br-lg rounded-bl-lg rounded-tr-lg shadow-lg hover:shadow-xl hover:bg-orange-50 flex items-center justify-center"
