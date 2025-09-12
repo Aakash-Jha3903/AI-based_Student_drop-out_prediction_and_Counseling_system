@@ -2,6 +2,7 @@
 sih25_vir/
 .env/
 __pycache__/
+.venv/
 
 mongo_drf_test_pro/
 node_modules/
