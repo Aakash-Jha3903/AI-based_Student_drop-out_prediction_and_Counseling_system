@@ -69,11 +69,11 @@ const ManageSchedule = () => {
       }
     } catch (err) {
       console.error("Error scheduling:", err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: err?.data?.message || 'Failed to schedule.',
-      });
+      // Swal.fire({
+      //   icon: 'error',
+      //   title: 'Oops...',
+      //   text: err?.data?.message || 'Failed to schedule.',
+      // });
     }
   };
 
