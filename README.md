@@ -25,7 +25,12 @@ DropTrack.AI is an innovative platform that leverages artificial intelligence to
 - **Counseling Management**: Schedule and manage counseling sessions
 - **Performance Monitoring**: Track academic and behavioral indicators
 
-## 🛠️ Tech Stack
+## � Project Demo
+
+- **Project Video**: [Project_Video.mp4](Technical_Details/Project_Video.mp4)
+- **YouTube Demo**: [Watch on YouTube](https://youtu.be/WfC9eiZ2A10?si=hdq-AC6gmWAEWRwh)
+
+## �🛠️ Tech Stack
 
 ### Frontend
 - React.js
